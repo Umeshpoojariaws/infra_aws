@@ -1,654 +1,477 @@
-# 🚀 AWS Multi-Account Setup - Complete Beginner's Exercise
+# 🚀 Complete Beginner's AWS Multi-Account Infrastructure Exercise
 
-This guide will walk you through setting up a complete AWS multi-account infrastructure from scratch. Perfect for beginners who want to learn AWS Organizations, Terraform, and CI/CD!
+**Transform from zero AWS experience to deploying professional multi-account infrastructure in 4 hours!**
 
-## 📋 **Prerequisites Checklist**
+## 📋 Overview
 
-Before starting, make sure you have:
+This comprehensive exercise guides complete beginners through setting up a production-ready AWS multi-account infrastructure using Terraform and GitHub Actions. You'll learn AWS Organizations, Terraform, CI/CD, and Kubernetes deployment.
 
-- [ ] **Computer** with internet access
-- [ ] **Email address** for AWS account creation
-- [ ] **Credit card** (AWS requires payment method for account creation)
-- [ ] **Time** (This exercise takes 2-3 hours for beginners)
+**Time Required:** 4 hours (broken into 5 manageable phases)
+**Prerequisites:** None! Just a computer and willingness to learn.
 
-## 🎯 **What You'll Build**
+## 🎯 Learning Outcomes
 
-By the end of this exercise, you'll have:
-- ✅ **AWS Organization** with 3 accounts (dev, staging, prod)
-- ✅ **Terraform setup** for infrastructure as code
-- ✅ **GitHub Actions CI/CD** pipeline
-- ✅ **EKS clusters** in each environment
-- ✅ **RDS databases** with automated secrets
-- ✅ **Complete documentation** and automation scripts
+By the end of this exercise, you will:
+- ✅ Understand AWS Organizations and multi-account architecture
+- ✅ Master Terraform for Infrastructure as Code
+- ✅ Set up GitHub Actions for CI/CD automation
+- ✅ Deploy Kubernetes applications across environments
+- ✅ Implement professional cloud infrastructure practices
 
-## 📚 **Exercise Overview**
+## 📚 Phase-by-Phase Guide
 
-### **Phase 1: AWS Account Setup** (30 minutes)
-### **Phase 2: Development Environment** (45 minutes)  
-### **Phase 3: Infrastructure as Code** (60 minutes)
-### **Phase 4: CI/CD Pipeline** (45 minutes)
-### **Phase 5: Testing & Validation** (30 minutes)
+### 📝 **Phase 1: AWS Account Setup** (30 minutes)
 
----
+#### Step 1: Create AWS Account
+1. Go to [aws.amazon.com](https://aws.amazon.com/) and click "Create an AWS Account"
+2. Follow the sign-up process (you'll need a credit card for verification)
+3. Complete identity verification (usually takes a few minutes)
+4. Set up billing alerts to avoid unexpected charges
 
-# 📁 **Phase 1: AWS Account Setup**
-
-## Step 1: Create Your AWS Account
-
-### 1.1 Sign Up for AWS
-1. Go to [https://aws.amazon.com/](https://aws.amazon.com/)
-2. Click **"Create an AWS Account"**
-3. Enter your email address and click **"Continue"**
-4. Create a password and click **"Sign in using our sign-in assistance"**
-
-### 1.2 Account Information
-Fill in your personal/business information:
-- **Account name**: `MyCloudTraining`
-- **Root user email**: `your-email@example.com`
-- **Password**: Create a strong password
-- **Country/Region**: Select your country
-
-### 1.3 Payment Information
-AWS requires a payment method (you won't be charged during the free tier):
-- **Name on card**: Your name
-- **Card number**: Your credit/debit card
-- **Expiration date**: Card expiration
-- **CVV**: Card security code
-- **Billing address**: Your address
-
-### 1.4 Identity Verification
-AWS will verify your identity (usually via phone call):
-- **Phone number**: Enter your phone number
-- **Verification**: AWS will call you with a PIN
-- **Enter PIN**: Provide the PIN when prompted
-
-### 1.5 Support Plan Selection
-Choose **"Basic (Free)"** support plan
-
-**✅ AWS Account Created!**
-
-## Step 2: Get Your Account Information
-
-### 2.1 Find Your Account ID
-1. Sign in to AWS Console: [https://console.aws.amazon.com/](https://console.aws.amazon.com/)
-2. Click on your account name in the top-right
-3. Click **"My Account"**
-4. Copy your **Account ID** (12-digit number)
-5. Save it: `MAIN_ACCOUNT_ID=123456789012`
-
-### 2.2 Set Up AWS CLI Access
-1. Go to IAM Console: [https://console.aws.amazon.com/iam/](https://console.aws.amazon.com/iam/)
-2. Click **"Users"** in the left menu
-3. Click **"Add user"**
-4. **User name**: `terraform-admin`
-5. **Access type**: Check **"Programmatic access"**
-6. Click **"Next: Permissions"**
-7. Click **"Attach existing policies directly"**
-8. Search for and select **"AdministratorAccess"**
-9. Click **"Next: Tags"**
-10. Add tag: `Key=ManagedBy, Value=terraform`
-11. Click **"Next: Review"**
-12. Click **"Create user"**
-
-### 2.3 Save Access Keys
-After user creation, you'll see:
-- **Access key ID**: `AKIAIOSFODNN7EXAMPLE`
-- **Secret access key**: `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`
-
-**⚠️ Save these keys immediately! You can't see them again.**
-
-## Step 3: Install Required Tools
-
-### 3.1 Install AWS CLI
-**Windows:**
+#### Step 2: Create IAM User with Administrator Access
 ```bash
-# Download and run installer
-https://awscli.amazonaws.com/AWSCLIV2.msi
+# In AWS Console:
+# 1. Go to IAM service
+# 2. Click "Users" → "Add user"
+# 3. Name: "terraform-admin"
+# 4. Select "Programmatic access" and "AWS Management Console access"
+# 5. Attach existing policies: AdministratorAccess
+# 6. Create user and save credentials securely
 ```
 
-**Mac (with Homebrew):**
+#### Step 3: Install Required Tools
 ```bash
-brew install awscli
-```
-
-**Linux:**
-```bash
+# Install AWS CLI
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
 sudo ./aws/install
+
+# Install Terraform
+wget https://releases.hashicorp.com/terraform/1.9.0/terraform_1.9.0_linux_amd64.zip
+unzip terraform_1.9.0_linux_amd64.zip
+sudo mv terraform /usr/local/bin/
+
+# Install kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+
+# Verify installations
+aws --version
+terraform --version
+kubectl version --client
 ```
 
-### 3.2 Configure AWS CLI
+#### Step 4: Configure AWS CLI
 ```bash
 aws configure
-# Enter when prompted:
-# AWS Access Key ID: [your-access-key-id]
-# AWS Secret Access Key: [your-secret-access-key]
-# Default region name: us-east-1
-# Default output format: json
+# Enter your Access Key ID, Secret Access Key, region (us-east-1), and output format (json)
 ```
 
-### 3.3 Install Terraform
-**Windows:**
-```bash
-# Download from: https://www.terraform.io/downloads
-# Extract and add to PATH
-```
-
-**Mac (with Homebrew):**
-```bash
-brew install terraform
-```
-
-**Linux:**
-```bash
-wget https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip
-unzip terraform_1.6.0_linux_amd64.zip
-sudo mv terraform /usr/local/bin/
-```
-
-### 3.4 Install Git
-**Windows/Mac:** Download from [https://git-scm.com/](https://git-scm.com/)
-**Linux:**
-```bash
-sudo apt-get install git  # Ubuntu/Debian
-sudo yum install git      # CentOS/RHEL
-```
-
-### 3.5 Install jq (JSON processor)
-**Mac:**
-```bash
-brew install jq
-```
-
-**Linux:**
-```bash
-sudo apt-get install jq  # Ubuntu/Debian
-sudo yum install jq      # CentOS/RHEL
-```
-
-## Step 4: Verify Setup
-
-```bash
-# Test AWS CLI
-aws sts get-caller-identity
-
-# Expected output:
-# {
-#   "UserId": "AIDAEXAMPLEID",
-#   "Account": "123456789012",
-#   "Arn": "arn:aws:iam::123456789012:user/terraform-admin"
-# }
-
-# Test Terraform
-terraform --version
-# Expected: Terraform v1.6.0
-
-# Test Git
-git --version
-# Expected: git version 2.x.x
-```
-
-**✅ Phase 1 Complete! You have a working AWS account and tools.**
+**✅ Phase 1 Complete!** You now have a working AWS account with proper IAM setup.
 
 ---
 
-# 🛠️ **Phase 2: Development Environment**
+### 🛠️ **Phase 2: Development Environment Setup** (45 minutes)
 
-## Step 5: Set Up Your Development Environment
-
-### 5.1 Create Project Directory
+#### Step 1: Clone and Explore the Repository
 ```bash
-# Create project folder
-mkdir ~/aws-multi-account-training
-cd ~/aws-multi-account-training
-
-# Clone the infrastructure code
+# Clone the infrastructure repository
 git clone https://github.com/your-username/aws-multi-account-infra.git
 cd aws-multi-account-infra
+
+# Explore the structure
+ls -la
+tree -L 3  # if tree is installed, otherwise use find
 ```
 
-### 5.2 Set Environment Variables
-Create a `.env` file with your configuration:
+#### Step 2: Set Up GitHub Repository
+1. Create a new GitHub repository (private recommended for learning)
+2. Push the infrastructure code:
 ```bash
-cat > .env << 'EOF'
+git remote add origin https://github.com/your-username/your-repo.git
+git branch -M main
+git push -u origin main
+```
+
+#### Step 3: Configure Environment Variables
+```bash
+# Create .env file for local development
+cat > .env << EOF
 # AWS Configuration
-export MAIN_ACCOUNT_ID=123456789012
-export AWS_REGION=us-east-1
+AWS_REGION=us-east-1
+AWS_PROFILE=default
 
-# GitHub Configuration (for later)
-export GITHUB_ORG=my-training-org
-export GITHUB_REPO=aws-multi-account-infra
+# GitHub Configuration
+GITHUB_ORG=your-username
+GITHUB_REPO=your-repo
 
-# Environment Configuration
-export ENVIRONMENTS="dev,staging,prod"
+# Account IDs (will be filled after Phase 3)
+MAIN_ACCOUNT_ID=your-main-account-id
+DEV_SHARED_ACCOUNT_ID=
+STAGING_SHARED_ACCOUNT_ID=
+PROD_SHARED_ACCOUNT_ID=
 EOF
 
 # Load environment variables
 source .env
 ```
 
-### 5.3 Create GitHub Repository
-1. Go to [https://github.com/new](https://github.com/new)
-2. **Repository name**: `aws-multi-account-infra`
-3. **Description**: `AWS Multi-Account Infrastructure with Terraform`
-4. **Public**: ✓ (recommended for learning)
-5. **Initialize this repository with a README**: ✓
-6. Click **"Create repository"**
-
-### 5.4 Push Code to GitHub
+#### Step 4: Test AWS Access
 ```bash
-# Initialize git
-git init
-git add .
-git commit -m "Initial commit: AWS multi-account infrastructure"
+# Test AWS CLI access
+aws sts get-caller-identity
 
-# Add GitHub remote
-git remote add origin https://github.com/your-username/aws-multi-account-infra.git
-
-# Push to GitHub
-git branch -M main
-git push -u origin main
+# Expected output: Your account ID and user ARN
 ```
 
-**✅ Phase 2 Complete! Your development environment is ready.**
+**✅ Phase 2 Complete!** Your development environment is ready.
 
 ---
 
-# 🏗️ **Phase 3: Infrastructure as Code**
+### 🏗️ **Phase 3: Infrastructure as Code** (60 minutes)
 
-## Step 6: Set Up Terraform Backend
+#### Step 1: Handle Existing Resources (NEW - Critical Step!)
+Before running Terraform, check for existing resources:
 
-### 6.1 Create S3 Bucket for State
 ```bash
-# Create bucket name (must be globally unique)
-BUCKET_NAME="terraform-state-$(date +%s)-${MAIN_ACCOUNT_ID}"
-
-# Create the bucket
-aws s3 mb s3://$BUCKET_NAME --region $AWS_REGION
-
-# Enable versioning
-aws s3api put-bucket-versioning \
-  --bucket $BUCKET_NAME \
-  --versioning-configuration Status=Enabled
-
-# Enable encryption
-aws s3api put-bucket-encryption \
-  --bucket $BUCKET_NAME \
-  --server-side-encryption-configuration '{
-    "Rules": [{
-      "ApplyServerSideEncryptionByDefault": {
-        "SSEAlgorithm": "AES256"
-      }
-    }]
-  }'
-
-echo "Terraform state bucket: $BUCKET_NAME"
+# Run the resource handling script
+chmod +x scripts/handle-existing-resources.sh
+./scripts/handle-existing-resources.sh
 ```
 
-### 6.2 Create DynamoDB Table for Locking
+This script will:
+- ✅ Check for existing DynamoDB table and S3 bucket
+- ✅ Configure them properly if they exist
+- ✅ List existing AWS accounts in your organization
+- ✅ Check for existing IAM roles and policies
+- ✅ Provide guidance on what to expect
+
+#### Step 2: Reset Terraform State (If Needed)
+If you encounter issues with existing Terraform state:
+
 ```bash
-# Create DynamoDB table
+# Run the state reset script
+chmod +x scripts/reset-terraform-state.sh
+./scripts/reset-terraform-state.sh
+```
+
+This script will:
+- ✅ Remove problematic resources from Terraform state
+- ✅ Allow clean re-deployment without conflicts
+- ✅ Preserve existing AWS resources
+
+#### Step 3: Work with Existing Accounts (NEW - Critical!)
+
+**⚠️ Important: Some accounts cannot be removed from AWS Organizations**
+
+If you see accounts that cannot be removed (like `dev-app` #138412911194 and `dev-ml` #130361465823), **don't worry!** You have two options:
+
+**Option A: Use Existing Accounts (Recommended for Beginners)**
+```bash
+# Check existing accounts in your organization
+aws organizations list-accounts --query 'Accounts[].{Name:Name,Id:Id,Email:Email}' --output table
+
+# Use these existing account IDs in your configuration
+# Update your .env file with the existing account IDs
+```
+
+**Option B: Skip Account Creation**
+```bash
+# Modify the beginner's exercise to focus on:
+# - IAM roles and policies
+# - S3 and DynamoDB setup
+# - GitHub Actions integration
+# - Infrastructure deployment to existing accounts
+```
+
+#### Step 4: Create S3 Bucket for Terraform State (if needed)
+```bash
+# Create bucket for storing Terraform state (if not created by script)
+aws s3 mb s3://terraform-state-$AWS_ACCOUNT_ID
+
+# Enable versioning for state backup
+aws s3api put-bucket-versioning --bucket terraform-state-$AWS_ACCOUNT_ID --versioning-configuration Status=Enabled
+
+# Set up encryption
+aws s3api put-bucket-encryption --bucket terraform-state-$AWS_ACCOUNT_ID --server-side-encryption-configuration '{
+  "Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]
+}'
+```
+
+#### Step 5: Create DynamoDB Table for State Locking (if needed)
+```bash
+# Create table for state locking (if not created by script)
 aws dynamodb create-table \
   --table-name terraform-locks \
   --attribute-definitions AttributeName=LockID,AttributeType=S \
   --key-schema AttributeName=LockID,KeyType=HASH \
-  --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
-  --region $AWS_REGION
+  --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
 
-echo "DynamoDB table created: terraform-locks"
+# Wait for table creation
+aws dynamodb wait table-exists --table-name terraform-locks
 ```
 
-### 6.3 Configure Terraform Backend
-Edit `global/backend.tf`:
-```hcl
+#### Step 6: Configure Terraform Backend
+```bash
+# Navigate to global directory
+cd global
+
+# Create backend configuration
+cat > backend.tf << EOF
 terraform {
   backend "s3" {
-    bucket         = "terraform-state-1234567890-123456789012"  # Replace with your bucket name
-    key            = "organization.tfstate"
+    bucket         = "terraform-state-$MAIN_ACCOUNT_ID"
+    key            = "global/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "terraform-locks"
     encrypt        = true
   }
 }
+EOF
 ```
 
-## Step 7: Create AWS Organization
-
-### 7.1 Initialize Terraform
+#### Step 7: Deploy AWS Organization
 ```bash
-cd global
+# Initialize Terraform
 terraform init
-```
 
-### 7.2 Review the Plan
-```bash
-terraform plan -var="main_account_id=$MAIN_ACCOUNT_ID" \
+# Plan the deployment
+terraform plan -var="main_account_id=$AWS_ACCOUNT_ID" \
               -var="github_org=$GITHUB_ORG" \
               -var="github_repo=$GITHUB_REPO"
-```
 
-### 7.3 Apply the Configuration
-```bash
-terraform apply -var="main_account_id=$MAIN_ACCOUNT_ID" \
+# Apply the configuration
+terraform apply -var="main_account_id=$AWS_ACCOUNT_ID" \
                -var="github_org=$GITHUB_ORG" \
                -var="github_repo=$GITHUB_REPO"
+
+# Confirm with "yes" when prompted
 ```
 
-**Type `yes` when prompted to confirm.**
+**Expected Output:**
+```
+Apply complete! Resources: 15 added, 0 changed, 0 destroyed.
 
-This will create:
-- ✅ AWS Organization
-- ✅ Organizational Units (dev, staging, prod)
-- ✅ Accounts (dev-shared, staging-shared, prod-shared)
-- ✅ Terraform role with OIDC authentication
-- ✅ S3 bucket and DynamoDB table
+Outputs:
+organization_id = "o-1234567890"
+dev_shared_account_id = "123456789012"
+staging_shared_account_id = "234567890123"
+prod_shared_account_id = "345678901234"
+github_actions_role_arn = "arn:aws:iam::082291634188:role/GitHubActionsOIDCRole"
+```
 
-### 7.4 Verify Organization Creation
+#### Step 8: Handle Existing Resources (If Needed)
+
+**⚠️ If you see errors about existing accounts or resources:**
+
+If Terraform reports that accounts already exist or cannot be deleted, follow these steps:
+
+1. **Check for existing accounts:**
 ```bash
-# List accounts in your organization
-aws organizations list-accounts
-
-# Expected output should show 4 accounts:
-# - Management account (your main account)
-# - dev-shared account
-# - staging-shared account  
-# - prod-shared account
+# List existing accounts in your organization
+aws organizations list-accounts --query 'Accounts[].{Name:Name,Id:Id,Email:Email}' --output table
 ```
 
-**✅ Phase 3 Complete! Your AWS Organization is ready.**
+2. **Use existing accounts (Recommended for beginners):**
+   - If accounts already exist, you can use them instead of creating new ones
+   - Update the beginner's exercise to reference the existing account IDs
+   - Skip the account creation step and proceed to infrastructure deployment
+
+3. **Focus on what you can deploy:**
+   - IAM roles and policies
+   - S3 and DynamoDB setup
+   - GitHub Actions integration
+   - Infrastructure deployment to existing accounts
+
+#### Step 9: Update Environment Variables
+```bash
+# Update your .env file with the new account IDs
+# Use the output from terraform apply to fill these in
+```
+
+**✅ Phase 3 Complete!** You now have a complete AWS Organization with 3 accounts.
 
 ---
 
-# 🚀 **Phase 4: CI/CD Pipeline**
+### 🚀 **Phase 4: CI/CD Pipeline Setup** (45 minutes)
 
-## Step 8: Set Up GitHub Actions
+#### Step 1: Configure GitHub Repository Secrets
+In your GitHub repository settings, add these secrets:
+- `AWS_ROLE_ARN`: The GitHub Actions role ARN from Phase 3 output
+- `AWS_REGION`: `us-east-1`
 
-### 8.1 Create GitHub Secrets
-1. Go to your GitHub repository
-2. Click **"Settings"** → **"Secrets and variables"** → **"Actions"**
-3. Click **"New repository secret"**
-
-Add these secrets:
-- **Name**: `AWS_ROLE_ARN`
-- **Value**: `arn:aws:iam::123456789012:role/TerraformRole` (from Terraform output)
-
-### 8.2 Test the CI/CD Pipeline
-1. Create a new branch:
+#### Step 2: Test CI/CD Pipeline
 ```bash
-git checkout -b test-cicd
-```
-
-2. Make a small change (add a comment to any file)
-
-3. Commit and push:
-```bash
-git add .
+# Make a small change to trigger the pipeline
+echo "# Test commit" >> README.md
+git add README.md
 git commit -m "Test CI/CD pipeline"
-git push origin test-cicd
+git push origin main
 ```
 
-4. Create a Pull Request on GitHub
+#### Step 3: Monitor Pipeline Execution
+1. Go to your GitHub repository
+2. Click on "Actions" tab
+3. Watch the Terraform CI workflow execute
+4. Check that it successfully plans and applies changes
 
-5. Check the **Actions** tab to see the pipeline run
-
-### 8.3 Set Up GitHub CLI (Optional)
+#### Step 4: Deploy Infrastructure to Each Environment
 ```bash
-# Install GitHub CLI
-# Mac: brew install gh
-# Windows: winget install GitHub.cli
-# Linux: See https://cli.github.com/
-
-# Authenticate
-gh auth login
-
-# Set up secrets using CLI
-gh secret set AWS_ROLE_ARN -b"arn:aws:iam::123456789012:role/TerraformRole"
-```
-
-## Step 9: Deploy Environment Infrastructure
-
-### 9.1 Deploy Dev Environment
-```bash
+# Deploy to dev environment
 cd environments/dev/shared
+terraform init
+terraform apply -var="account_id=$DEV_SHARED_ACCOUNT_ID"
 
-# Initialize
-terraform init -backend-config="bucket=terraform-state-1234567890-123456789012"
+# Deploy to staging environment
+cd ../../environments/staging/shared
+terraform init
+terraform apply -var="account_id=$STAGING_SHARED_ACCOUNT_ID"
 
-# Plan
-terraform plan
-
-# Apply
-terraform apply
+# Deploy to prod environment
+cd ../../environments/prod/shared
+terraform init
+terraform apply -var="account_id=$PROD_SHARED_ACCOUNT_ID"
 ```
 
-This will create:
-- ✅ VPC with subnets
-- ✅ EKS cluster
-- ✅ RDS database
-- ✅ API Gateway
-- ✅ Route 53 records
-
-### 9.2 Deploy Staging Environment
-```bash
-cd ../../staging/shared
-terraform init -backend-config="bucket=terraform-state-1234567890-123456789012"
-terraform apply
-```
-
-### 9.3 Deploy Production Environment
-```bash
-cd ../../prod/shared
-terraform init -backend-config="bucket=terraform-state-1234567890-123456789012"
-terraform apply
-```
-
-**⚠️ Note: Production deployment will take 15-20 minutes for EKS cluster creation.**
-
-**✅ Phase 4 Complete! Your CI/CD pipeline is working.**
+**✅ Phase 4 Complete!** Your CI/CD pipeline is working and infrastructure is deployed.
 
 ---
 
-# 🧪 **Phase 5: Testing & Validation**
+### 🧪 **Phase 5: Testing & Validation** (30 minutes)
 
-## Step 10: Test Your Infrastructure
-
-### 10.1 Verify EKS Clusters
+#### Step 1: Test EKS Cluster Deployment
 ```bash
-# Get EKS cluster credentials
-aws eks update-kubeconfig --region us-east-1 --name dev-shared-eks-cluster-main
-
-# Test cluster access
-kubectl get nodes
-kubectl get pods --all-namespaces
-
-# Expected: You should see worker nodes and system pods running
-```
-
-### 10.2 Test RDS Database
-```bash
-# Get database endpoint from Terraform output
-terraform output -raw rds_endpoint
-
-# Test database connectivity (you'll need to install MySQL client)
-mysql -h [endpoint] -u admin -p
-# Enter the password from Terraform output
-```
-
-### 10.3 Test API Gateway
-```bash
-# Get API endpoint from Terraform output
-terraform output -raw api_gateway_url
-
-# Test the API
-curl https://[api-id].execute-api.us-east-1.amazonaws.com/v1/
-```
-
-### 10.4 Test Cross-Account Access
-```bash
-# Switch to dev account
-aws sts assume-role --role-arn arn:aws:iam::[dev-account-id]:role/TerraformRole --role-session-name test
-
-# Verify you can access dev account resources
-aws sts get-caller-identity
-```
-
-## Step 11: Create Your First Application
-
-### 11.1 Deploy Sample Application
-```bash
-# Deploy frontend
-kubectl apply -f environments/dev/shared/k8s-manifests/frontend-deployment.yaml
-
-# Deploy backend
-kubectl apply -f environments/dev/shared/k8s-manifests/backend-deployment.yaml
+# Deploy sample application to dev cluster
+cd environments/dev/shared
+kubectl apply -f ../../examples/sample-app/
 
 # Verify deployment
-kubectl get pods
-kubectl get services
+kubectl get pods -n sample-app
+kubectl get services -n sample-app
 ```
 
-### 11.2 Test Application
+#### Step 2: Test RDS Database
 ```bash
-# Get service IP
-kubectl get services
+# Check RDS instance status
+aws rds describe-db-instances --db-instance-identifier dev-shared-rds-db-primary
 
-# Access the application
-curl http://[service-ip]:3000
+# Test database connectivity (if applicable)
 ```
 
-## Step 12: Clean Up (Important!)
-
-### 12.1 Destroy Test Resources
+#### Step 3: Test API Gateway
 ```bash
-# Destroy dev environment
+# Get API Gateway URL
+aws apigateway get-rest-api --rest-api-id your-api-id
+
+# Test the API endpoint
+curl https://your-api-id.execute-api.us-east-1.amazonaws.com/dev
+```
+
+#### Step 4: Clean Up Resources
+```bash
+# Destroy dev environment (to save costs)
 cd environments/dev/shared
-terraform destroy
+terraform destroy -var="account_id=$DEV_SHARED_ACCOUNT_ID"
 
-# Destroy staging environment
-cd ../../staging/shared
-terraform destroy
-
-# Destroy production environment
-cd ../../prod/shared
-terraform destroy
+# Note: Keep staging and prod for continued learning
 ```
 
-### 12.2 Destroy Organization (Optional)
-```bash
-# Only if you want to completely clean up
-cd global
-terraform destroy
-```
-
-### 12.3 Delete S3 Bucket and DynamoDB
-```bash
-# Delete S3 bucket contents
-aws s3 rm s3://your-bucket-name --recursive
-
-# Delete bucket
-aws s3 rb s3://your-bucket-name --force
-
-# Delete DynamoDB table
-aws dynamodb delete-table --table-name terraform-locks
-```
-
-**✅ Phase 5 Complete! You've successfully tested everything.**
+**✅ Phase 5 Complete!** You've successfully tested and validated your infrastructure.
 
 ---
 
-# 📚 **Exercise Completion Checklist**
+## 🎉 **Exercise Complete!**
 
-## ✅ **You've Learned:**
+Congratulations! You've successfully completed the beginner's AWS multi-account infrastructure exercise. Here's what you've accomplished:
 
-- [ ] How to create and configure an AWS account
-- [ ] AWS Organizations and multi-account structure
-- [ ] Terraform for infrastructure as code
-- [ ] S3 and DynamoDB for state management
-- [ ] EKS cluster creation and management
-- [ ] RDS database setup with automated secrets
-- [ ] API Gateway and Route 53 configuration
-- [ ] GitHub Actions for CI/CD automation
-- [ ] Cross-account IAM roles and permissions
-- [ ] Kubernetes application deployment
+### 🏆 **Achievements Unlocked**
+- ✅ Created and configured AWS Organizations
+- ✅ Set up Terraform with proper state management
+- ✅ Deployed infrastructure across multiple AWS accounts
+- ✅ Configured GitHub Actions for CI/CD automation
+- ✅ Deployed and tested Kubernetes applications
+- ✅ Implemented professional cloud infrastructure practices
 
-## 🎯 **Next Steps to Continue Learning:**
-
-1. **Add More Services**: Try adding Redis, ElastiCache, or S3 buckets
-2. **Implement Monitoring**: Add CloudWatch dashboards and alarms
-3. **Security Hardening**: Implement additional security controls
-4. **Cost Optimization**: Set up budgets and cost monitoring
-5. **Advanced CI/CD**: Add automated testing and deployment strategies
-
-## 🆘 **Troubleshooting Common Issues:**
-
-### **AWS CLI Authentication Errors**
-```bash
-# Reconfigure AWS CLI
-aws configure
-# Or check credentials
-aws sts get-caller-identity
+### 📊 **What You've Built**
+```
+AWS Organization (o-1234567890)
+├── environments OU
+│   ├── dev OU
+│   │   └── dev-shared account (123456789012)
+│   │       ├── EKS Cluster
+│   │       ├── RDS Database
+│   │       └── API Gateway
+│   ├── staging OU
+│   │   └── staging-shared account (234567890123)
+│   │       ├── EKS Cluster
+│   │       ├── RDS Database
+│   │       └── API Gateway
+│   └── prod OU
+│       └── prod-shared account (345678901234)
+│           ├── EKS Cluster
+│           ├── RDS Database
+│           └── API Gateway
+└── Main Account (082291634188)
+    ├── Terraform State S3 Bucket
+    ├── DynamoDB Lock Table
+    └── GitHub Actions OIDC Role
 ```
 
-### **Terraform State Lock Errors**
-```bash
-# Force unlock (use carefully)
-terraform force-unlock LOCK_ID
-```
+### 🔄 **Next Steps for Continued Learning**
 
-### **EKS Cluster Creation Failures**
-- Check IAM permissions
-- Verify VPC and subnet configuration
-- Ensure sufficient AWS service limits
+1. **Advanced Kubernetes**: Learn Helm charts, ingress controllers, and service mesh
+2. **Security Hardening**: Implement secrets management, network policies, and IAM fine-tuning
+3. **Monitoring & Observability**: Set up CloudWatch, Prometheus, and Grafana
+4. **Cost Optimization**: Implement resource tagging, budgets, and cost allocation
+5. **Disaster Recovery**: Configure backup strategies and multi-region deployments
 
-### **GitHub Actions Failures**
-- Check GitHub secrets are set correctly
-- Verify OIDC provider configuration
-- Check Terraform plan output for errors
+### 📚 **Additional Resources**
 
-## 📞 **Getting Help:**
+- [AWS Well-Architected Framework](https://aws.amazon.com/architecture/well-architected/)
+- [Terraform Best Practices](https://developer.hashicorp.com/terraform/tutorials)
+- [Kubernetes Documentation](https://kubernetes.io/docs/)
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
 
-- **AWS Documentation**: [https://docs.aws.amazon.com/](https://docs.aws.amazon.com/)
-- **Terraform Documentation**: [https://www.terraform.io/docs/](https://www.terraform.io/docs/)
-- **GitHub Actions Documentation**: [https://docs.github.com/en/actions](https://docs.github.com/en/actions)
-- **AWS Support**: Use AWS Support Center for account issues
+### 🤝 **Need Help?**
+
+If you encounter issues during the exercise:
+1. Check the [TROUBLESHOOTING.md](TROUBLESHOOTING.md) file
+2. Review AWS CloudTrail logs for API errors
+3. Check Terraform state and plan outputs
+4. Consult the AWS documentation for service-specific guidance
+
+**Common Issues & Solutions:**
+- **Account limits**: Use existing accounts instead of creating new ones
+- **Permission errors**: Ensure IAM user has AdministratorAccess policy
+- **Terraform state conflicts**: Use `terraform force-unlock` if needed
+- **Resource already exists**: Use `lifecycle { ignore_changes = [...] }` in Terraform
+- **Existing resources**: Run `scripts/handle-existing-resources.sh` first
+- **State conflicts**: Run `scripts/reset-terraform-state.sh` to reset state
+- **Cannot remove accounts**: Use existing accounts or focus on deployable resources
 
 ---
 
-# 🎉 **Congratulations!**
+## 📝 **Exercise Summary**
 
-You've successfully completed the AWS Multi-Account Infrastructure exercise! 
+This beginner's exercise provided a complete foundation in:
+- **AWS Multi-Account Architecture** using Organizations
+- **Infrastructure as Code** with Terraform modules
+- **CI/CD Automation** with GitHub Actions
+- **Kubernetes Orchestration** with EKS
+- **Database Management** with RDS
+- **API Management** with API Gateway
 
-**What you've accomplished:**
-- ✅ Built a production-ready multi-account AWS environment
-- ✅ Implemented infrastructure as code with Terraform
-- ✅ Set up automated CI/CD with GitHub Actions
-- ✅ Deployed containerized applications on Kubernetes
-- ✅ Learned AWS best practices for security and organization
+You now have the skills to build and manage professional cloud infrastructure at scale. Keep practicing, and don't hesitate to explore more advanced topics as you become comfortable with these foundational concepts!
 
-**Save this repository and documentation** - it's a great foundation for future projects and a valuable addition to your portfolio!
+**Remember**: The key to mastering cloud infrastructure is continuous learning and hands-on practice. Use this foundation to build more complex systems and explore new AWS services!
 
-**Share your success**: Tweet about your accomplishment with #AWS #Terraform #DevOps
+## 🎯 **Special Feature: Working with Existing Accounts**
 
----
+This exercise includes special guidance for working with existing AWS accounts:
 
-## 📝 **Exercise Feedback**
-
-How was your experience with this exercise?
-
-- [ ] **Easy to follow** - All steps were clear
-- [ ] **Challenging but doable** - Learned a lot
-- [ ] **Too difficult** - Need more guidance
-- [ ] **Too easy** - Want more advanced content
-
-**Suggestions for improvement:**
-_________________________________
-_________________________________
-_________________________________
-
-**What would you like to learn next?**
-_________________________________
-_________________________________
-_________________________________
-
-Thank you for completing this exercise! Happy cloud computing! 🚀
+- ✅ **Detect existing accounts** and use them instead of creating new ones
+- ✅ **Focus on deployable resources** when accounts cannot be removed
+- ✅ **Flexible approach** that works with any account setup
+- ✅ **No manual cleanup required** - work with what you have
+- ✅ **Complete learning experience** regardless of account situation
