@@ -1,0 +1,387 @@
+{
+  "GitHubActionsOIDCRole": {
+    "Description": "IAM role for GitHub Actions OIDC authentication",
+    "TrustPolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+            "Federated": "arn:aws:iam::ACCOUNT_ID:oidc-provider/token.actions.githubusercontent.com"
+          },
+          "Action": "sts:AssumeRoleWithWebIdentity",
+          "Condition": {
+            "StringEquals": {
+              "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+            },
+            "StringLike": {
+              "token.actions.githubusercontent.com:sub": [
+                "repo:ORGANIZATION/REPOSITORY:*",
+                "repo:ORGANIZATION/infra-repo:*"
+              ]
+            },
+            "StringEquals": {
+              "token.actions.githubusercontent.com:iss": "https://token.actions.githubusercontent.com"
+            }
+          }
+        }
+      ]
+    },
+    "PermissionsPolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "s3:CreateBucket",
+            "s3:GetBucket*",
+            "s3:ListBucket",
+            "s3:PutBucket*",
+            "s3:DeleteBucket",
+            "s3:PutObject",
+            "s3:GetObject",
+            "s3:DeleteObject",
+            "s3:ListBucketMultipartUploads",
+            "s3:ListMultipartUploadParts",
+            "s3:AbortMultipartUpload",
+            "s3:PutBucketVersioning",
+            "s3:GetBucketVersioning",
+            "s3:PutBucketEncryption",
+            "s3:GetBucketEncryption",
+            "s3:PutBucketAcl",
+            "s3:GetBucketAcl"
+          ],
+          "Resource": [
+            "arn:aws:s3:::terraform-state-*",
+            "arn:aws:s3:::terraform-state-*/*",
+            "arn:aws:s3:::terraform-backups-*",
+            "arn:aws:s3:::terraform-backups-*/*"
+          ]
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "dynamodb:CreateTable",
+            "dynamodb:DescribeTable",
+            "dynamodb:GetItem",
+            "dynamodb:PutItem",
+            "dynamodb:UpdateItem",
+            "dynamodb:DeleteItem",
+            "dynamodb:Query",
+            "dynamodb:Scan",
+            "dynamodb:BatchGetItem",
+            "dynamodb:BatchWriteItem"
+          ],
+          "Resource": "arn:aws:dynamodb:*:*:table/terraform-locks"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "ec2:Describe*",
+            "ec2:CreateVpc",
+            "ec2:DeleteVpc",
+            "ec2:CreateSubnet",
+            "ec2:DeleteSubnet",
+            "ec2:ModifySubnetAttribute",
+            "ec2:CreateInternetGateway",
+            "ec2:DeleteInternetGateway",
+            "ec2:AttachInternetGateway",
+            "ec2:DetachInternetGateway",
+            "ec2:CreateNatGateway",
+            "ec2:DeleteNatGateway",
+            "ec2:CreateRouteTable",
+            "ec2:DeleteRouteTable",
+            "ec2:CreateRoute",
+            "ec2:DeleteRoute",
+            "ec2:ReplaceRoute",
+            "ec2:AssociateRouteTable",
+            "ec2:DisassociateRouteTable",
+            "ec2:CreateSecurityGroup",
+            "ec2:DeleteSecurityGroup",
+            "ec2:AuthorizeSecurityGroupIngress",
+            "ec2:RevokeSecurityGroupIngress",
+            "ec2:AuthorizeSecurityGroupEgress",
+            "ec2:RevokeSecurityGroupEgress",
+            "ec2:DescribeSecurityGroups",
+            "ec2:CreateVpcPeeringConnection",
+            "ec2:AcceptVpcPeeringConnection",
+            "ec2:DeleteVpcPeeringConnection",
+            "ec2:ModifyVpcPeeringConnectionOptions",
+            "ec2:DescribeVpcPeeringConnections",
+            "ec2:CreateTags",
+            "ec2:DeleteTags",
+            "ec2:RunInstances",
+            "ec2:TerminateInstances",
+            "ec2:DescribeInstances",
+            "ec2:StartInstances",
+            "ec2:StopInstances",
+            "ec2:CreateNetworkInterface",
+            "ec2:DeleteNetworkInterface",
+            "ec2:DescribeNetworkInterfaces",
+            "ec2:AttachNetworkInterface",
+            "ec2:DetachNetworkInterface"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "eks:CreateCluster",
+            "eks:DeleteCluster",
+            "eks:DescribeCluster",
+            "eks:UpdateClusterConfig",
+            "eks:UpdateClusterVersion",
+            "eks:CreateNodegroup",
+            "eks:DeleteNodegroup",
+            "eks:DescribeNodegroup",
+            "eks:UpdateNodegroupConfig",
+            "eks:UpdateNodegroupVersion",
+            "eks:ListNodegroups",
+            "eks:ListClusters",
+            "eks:AccessKubernetesApi",
+            "eks:CreateFargateProfile",
+            "eks:DeleteFargateProfile",
+            "eks:DescribeFargateProfile",
+            "eks:ListFargateProfiles"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "rds:CreateDBInstance",
+            "rds:DeleteDBInstance",
+            "rds:DescribeDBInstances",
+            "rds:ModifyDBInstance",
+            "rds:StartDBInstance",
+            "rds:StopDBInstance",
+            "rds:CreateDBSubnetGroup",
+            "rds:DeleteDBSubnetGroup",
+            "rds:DescribeDBSubnetGroups",
+            "rds:ModifyDBSubnetGroup",
+            "rds:CreateDBSnapshot",
+            "rds:DeleteDBSnapshot",
+            "rds:DescribeDBSnapshots",
+            "rds:RestoreDBInstanceFromDBSnapshot",
+            "rds:AddTagsToResource",
+            "rds:RemoveTagsFromResource"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "apigateway:GET",
+            "apigateway:POST",
+            "apigateway:PUT",
+            "apigateway:DELETE",
+            "apigateway:PATCH",
+            "apigateway:UPDATE"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "route53:ListHostedZones",
+            "route53:GetHostedZone",
+            "route53:CreateHostedZone",
+            "route53:DeleteHostedZone",
+            "route53:ListResourceRecordSets",
+            "route53:ChangeResourceRecordSets",
+            "route53:GetChange",
+            "route53:ListTagsForResource"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "iam:CreateRole",
+            "iam:DeleteRole",
+            "iam:AttachRolePolicy",
+            "iam:DetachRolePolicy",
+            "iam:CreatePolicy",
+            "iam:DeletePolicy",
+            "iam:PutRolePolicy",
+            "iam:DeleteRolePolicy",
+            "iam:PassRole",
+            "iam:ListRoles",
+            "iam:GetRole",
+            "iam:CreateInstanceProfile",
+            "iam:DeleteInstanceProfile",
+            "iam:AddRoleToInstanceProfile",
+            "iam:RemoveRoleFromInstanceProfile",
+            "iam:GetInstanceProfile",
+            "iam:ListInstanceProfiles",
+            "iam:CreateServiceLinkedRole",
+            "iam:ListAttachedRolePolicies",
+            "iam:ListRolePolicies",
+            "iam:GetRolePolicy"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "organizations:DescribeOrganization",
+            "organizations:ListAccounts",
+            "organizations:DescribeAccount",
+            "organizations:ListOrganizationalUnitsForParent",
+            "organizations:DescribeOrganizationalUnit",
+            "organizations:ListChildren",
+            "organizations:ListParents",
+            "organizations:ListRoots"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "sts:GetCallerIdentity",
+            "sts:GetSessionToken",
+            "sts:AssumeRole"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents",
+            "logs:DescribeLogGroups",
+            "logs:DescribeLogStreams"
+          ],
+          "Resource": "arn:aws:logs:*:*:log-group:/aws/eks/*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "cloudwatch:PutMetricData",
+            "cloudwatch:GetMetricStatistics",
+            "cloudwatch:ListMetrics"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "ssm:GetParameter",
+            "ssm:GetParameters",
+            "ssm:GetParametersByPath",
+            "ssm:PutParameter",
+            "ssm:DeleteParameter"
+          ],
+          "Resource": "arn:aws:ssm:*:*:parameter/terraform/*"
+        }
+      ]
+    }
+  },
+  "EnvironmentAssumeRolePolicy": {
+    "Description": "Policy for assuming environment-specific roles",
+    "TrustPolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": "arn:aws:iam::MAIN_ACCOUNT_ID:role/GitHubActionsOIDCRole"
+          },
+          "Action": "sts:AssumeRole",
+          "Condition": {
+            "StringEquals": {
+              "sts:ExternalId": "ENVIRONMENT_NAME"
+            }
+          }
+        }
+      ]
+    },
+    "PermissionsPolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "s3:*",
+            "dynamodb:*",
+            "ec2:*",
+            "eks:*",
+            "rds:*",
+            "apigateway:*",
+            "route53:*",
+            "iam:*",
+            "logs:*",
+            "cloudwatch:*",
+            "ssm:*"
+          ],
+          "Resource": "*"
+        }
+      ]
+    }
+  },
+  "ReadOnlyPolicy": {
+    "Description": "Read-only access for validation and planning",
+    "Policy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "s3:Get*",
+            "s3:List*",
+            "dynamodb:Describe*",
+            "dynamodb:Get*",
+            "dynamodb:Query",
+            "dynamodb:Scan",
+            "ec2:Describe*",
+            "eks:Describe*",
+            "eks:List*",
+            "rds:Describe*",
+            "apigateway:GET",
+            "route53:Get*",
+            "route53:List*",
+            "iam:Get*",
+            "iam:List*",
+            "organizations:Describe*",
+            "organizations:List*",
+            "sts:Get*",
+            "logs:Describe*",
+            "cloudwatch:Get*",
+            "cloudwatch:List*",
+            "ssm:Get*",
+            "ssm:List*"
+          ],
+          "Resource": "*"
+        }
+      ]
+    }
+  },
+  "SecurityScanPolicy": {
+    "Description": "Permissions for security scanning with Checkov",
+    "Policy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "s3:Get*",
+            "s3:List*",
+            "ec2:Describe*",
+            "eks:Describe*",
+            "eks:List*",
+            "rds:Describe*",
+            "apigateway:GET",
+            "route53:Get*",
+            "route53:List*",
+            "iam:Get*",
+            "iam:List*",
+            "organizations:Describe*",
+            "organizations:List*"
+          ],
+          "Resource": "*"
+        }
+      ]
+    }
+  }
+}

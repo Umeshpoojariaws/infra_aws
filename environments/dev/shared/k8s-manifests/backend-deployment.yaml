@@ -1,0 +1,153 @@
+# Backend Deployment for Dev Environment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-dev
+  namespace: default
+  labels:
+    app: backend
+    environment: dev
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+      environment: dev
+  template:
+    metadata:
+      labels:
+        app: backend
+        environment: dev
+        version: v1
+    spec:
+      containers:
+      - name: backend
+        image: your-registry/backend:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: dev-shared-eks-cluster-main-db-config
+              key: host
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: dev-shared-eks-cluster-main-db-config
+              key: port
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: dev-shared-eks-cluster-main-db-config
+              key: database
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: dev-shared-eks-cluster-main-db-secret
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: dev-shared-eks-cluster-main-db-secret
+              key: password
+        - name: REDIS_URL
+          value: "redis://redis-dev:6379"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-dev
+  namespace: default
+  labels:
+    app: backend
+    environment: dev
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: backend
+    environment: dev
+---
+# Redis Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-dev
+  namespace: default
+  labels:
+    app: redis
+    environment: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+      environment: dev
+  template:
+    metadata:
+      labels:
+        app: redis
+        environment: dev
+    spec:
+      containers:
+      - name: redis
+        image: redis:6.2-alpine
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+      volumes:
+      - name: redis-storage
+        emptyDir: {}
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-dev
+  namespace: default
+  labels:
+    app: redis
+    environment: dev
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+  selector:
+    app: redis
+    environment: dev
