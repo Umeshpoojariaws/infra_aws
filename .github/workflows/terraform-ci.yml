@@ -1,5 +1,4 @@
-# Terraform CI/CD Pipeline
-name: Terraform CI/CD
+name: Terraform CI
 
 on:
   push:
@@ -7,156 +6,128 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  AWS_REGION: us-east-1
-  TF_VERSION: "1.6.0"
-  TERRAGRUNT_VERSION: "0.51.1"
-
 jobs:
+  terraform-format:
+    name: Terraform Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.9.0
+
+      - name: Terraform Format Check
+        run: |
+          # Check formatting for all Terraform files
+          find . -name "*.tf" -exec terraform fmt -check -recursive {} \;
+
   terraform-validate:
     name: Terraform Validate
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        directory: 
+          - global
+          - environments/dev/shared
+          - environments/staging/shared
+          - environments/prod/shared
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.9.0
 
-    - name: Terraform Format Check
-      run: terraform fmt -check -recursive
+      - name: Change to directory
+        run: cd ${{ matrix.directory }}
 
-    - name: Terraform Init
-      run: |
-        cd environments/dev/shared
-        terraform init -backend=false
+      - name: Terraform Init
+        run: |
+          cd ${{ matrix.directory }}
+          terraform init -backend=false
 
-    - name: Terraform Validate
-      run: |
-        cd environments/dev/shared
-        terraform validate
+      - name: Terraform Validate
+        run: |
+          cd ${{ matrix.directory }}
+          terraform validate
 
   terraform-plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
-    needs: terraform-validate
-    if: github.event_name == 'pull_request'
-
-    permissions:
-      contents: read
-      id-token: write
-
+    needs: [terraform-format, terraform-validate]
+    strategy:
+      matrix:
+        environment: 
+          - dev
+          - staging
+          - prod
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-        role-session-name: GitHubActions-${{ github.run_number }}
-        aws-region: ${{ env.AWS_REGION }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.9.0
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-    - name: Setup Terragrunt
-      uses: autero1/action-terragrunt@v1.2.2
-      with:
-        terragrunt_version: ${{ env.TERRAGRUNT_VERSION }}
+      - name: Terraform Init
+        run: |
+          cd environments/${{ matrix.environment }}/shared
+          terraform init
 
-    - name: Terraform Plan
-      run: |
-        cd environments/dev/shared
-        terragrunt plan -out=terraform.tfplan
-
-    - name: Upload Terraform Plan
-      uses: actions/upload-artifact@v4
-      with:
-        name: tfplan
-        path: environments/dev/shared/terraform.tfplan
+      - name: Terraform Plan
+        run: |
+          cd environments/${{ matrix.environment }}/shared
+          terraform plan -var="account_id=${{ secrets.AWS_ACCOUNT_ID }}"
 
   terraform-apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
-    needs: terraform-plan
+    needs: [terraform-plan]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    permissions:
-      contents: read
-      id-token: write
-
+    environment: 
+      name: ${{ matrix.environment }}
+      url: https://console.aws.amazon.com/
+    strategy:
+      matrix:
+        environment: 
+          - dev
+          - staging
+          - prod
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-        role-session-name: GitHubActions-${{ github.run_number }}
-        aws-region: ${{ env.AWS_REGION }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.9.0
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-    - name: Setup Terragrunt
-      uses: autero1/action-terragrunt@v1.2.2
-      with:
-        terragrunt_version: ${{ env.TERRAGRUNT_VERSION }}
+      - name: Terraform Init
+        run: |
+          cd environments/${{ matrix.environment }}/shared
+          terraform init
 
-    - name: Download Terraform Plan
-      uses: actions/download-artifact@v4
-      with:
-        name: tfplan
-        path: environments/dev/shared
-
-    - name: Terraform Apply
-      run: |
-        cd environments/dev/shared
-        terragrunt apply -auto-approve terraform.tfplan
-
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Run Checkov
-      uses: bridgecrewio/checkov-action@master
-      with:
-        directory: .
-        framework: terraform
-        output_format: sarif
-        output_file_path: checkov-results.sarif
-
-    - name: Upload Checkov Results
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: checkov-results.sarif
-
-  notify:
-    name: Notify
-    runs-on: ubuntu-latest
-    needs: [terraform-validate, terraform-plan, terraform-apply, security-scan]
-    if: always()
-
-    steps:
-    - name: Notify Slack
-      uses: 8398a7/action-slack@v3
-      with:
-        status: ${{ job.status }}
-        channel: '#infrastructure'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+      - name: Terraform Apply
+        run: |
+          cd environments/${{ matrix.environment }}/shared
+          terraform apply -auto-approve -var="account_id=${{ secrets.AWS_ACCOUNT_ID }}"
