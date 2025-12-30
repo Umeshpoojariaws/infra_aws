@@ -31,9 +31,6 @@ jobs:
       matrix:
         directory: 
           - global
-          - environments/dev/shared
-          - environments/staging/shared
-          - environments/prod/shared
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -56,16 +53,46 @@ jobs:
           cd ${{ matrix.directory }}
           terraform validate
 
+  terragrunt-validate:
+    name: Terragrunt Validate
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        directory: 
+          - environments/dev/shared
+          - environments/dev/app
+          - environments/dev/ml
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.9.0
+
+      - name: Setup Terragrunt
+        uses: autero1/action-terragrunt@v1.2.2
+        with:
+          terragrunt_version: latest
+
+      - name: Change to directory
+        run: cd ${{ matrix.directory }}
+
+      - name: Terragrunt Init
+        run: |
+          cd ${{ matrix.directory }}
+          terragrunt init --terragrunt-non-interactive
+
+      - name: Terragrunt Validate
+        run: |
+          cd ${{ matrix.directory }}
+          terragrunt validate --terragrunt-non-interactive
+
   terraform-plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
     needs: [terraform-format, terraform-validate]
-    strategy:
-      matrix:
-        environment: 
-          - dev
-          - staging
-          - prod
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -84,18 +111,96 @@ jobs:
 
       - name: Terraform Init
         run: |
-          cd environments/${{ matrix.environment }}/shared
+          cd global
           terraform init
 
       - name: Terraform Plan
         run: |
+          cd global
+          terraform plan -var="main_account_id=${{ secrets.AWS_ACCOUNT_ID }}" \
+                        -var="github_org=${{ secrets.GITHUB_ORG }}" \
+                        -var="github_repo=${{ secrets.GITHUB_REPO }}"
+
+  terragrunt-plan:
+    name: Terragrunt Plan
+    runs-on: ubuntu-latest
+    needs: [terraform-format, terragrunt-validate]
+    strategy:
+      matrix:
+        environment: 
+          - dev
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.9.0
+
+      - name: Setup Terragrunt
+        uses: autero1/action-terragrunt@v1.2.2
+        with:
+          terragrunt_version: latest
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Terragrunt Init
+        run: |
           cd environments/${{ matrix.environment }}/shared
-          terraform plan -var="account_id=${{ secrets.AWS_ACCOUNT_ID }}"
+          terragrunt init --terragrunt-non-interactive
+
+      - name: Terragrunt Plan
+        run: |
+          cd environments/${{ matrix.environment }}/shared
+          terragrunt plan --terragrunt-non-interactive \
+                        --var="account_id=${{ secrets.AWS_ACCOUNT_ID }}"
 
   terraform-apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
     needs: [terraform-plan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: 
+      name: global
+      url: https://console.aws.amazon.com/
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.9.0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Terraform Init
+        run: |
+          cd global
+          terraform init
+
+      - name: Terraform Apply
+        run: |
+          cd global
+          terraform apply -auto-approve -var="main_account_id=${{ secrets.AWS_ACCOUNT_ID }}" \
+                                       -var="github_org=${{ secrets.GITHUB_ORG }}" \
+                                       -var="github_repo=${{ secrets.GITHUB_REPO }}"
+
+  terragrunt-apply:
+    name: Terragrunt Apply
+    runs-on: ubuntu-latest
+    needs: [terragrunt-plan]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: 
       name: ${{ matrix.environment }}
@@ -104,8 +209,6 @@ jobs:
       matrix:
         environment: 
           - dev
-          - staging
-          - prod
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -115,6 +218,11 @@ jobs:
         with:
           terraform_version: 1.9.0
 
+      - name: Setup Terragrunt
+        uses: autero1/action-terragrunt@v1.2.2
+        with:
+          terragrunt_version: latest
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -122,12 +230,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Terraform Init
+      - name: Terragrunt Init
         run: |
           cd environments/${{ matrix.environment }}/shared
-          terraform init
+          terragrunt init --terragrunt-non-interactive
 
-      - name: Terraform Apply
+      - name: Terragrunt Apply
         run: |
           cd environments/${{ matrix.environment }}/shared
-          terraform apply -auto-approve -var="account_id=${{ secrets.AWS_ACCOUNT_ID }}"
+          terragrunt apply --terragrunt-non-interactive \
+                          --auto-approve \
+                          --var="account_id=${{ secrets.AWS_ACCOUNT_ID }}"
