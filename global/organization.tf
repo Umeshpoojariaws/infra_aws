@@ -50,7 +50,7 @@ resource "aws_organizations_organizational_unit" "prod" {
 # Create Accounts for Dev Environment (within AWS free tier limits)
 resource "aws_organizations_account" "dev_shared" {
   name      = "dev-shared"
-  email     = "dev-shared@yourorg.com"
+  email     = "umesh.poojariaws+viyansh@gmail.com"
   parent_id = aws_organizations_organizational_unit.dev.id
 
   lifecycle {
@@ -61,7 +61,7 @@ resource "aws_organizations_account" "dev_shared" {
 # Create Accounts for Staging Environment (within AWS free tier limits)
 resource "aws_organizations_account" "staging_shared" {
   name      = "staging-shared"
-  email     = "staging-shared@yourorg.com"
+  email     = "umesh.poojariaws+viyansh@gmail.com"
   parent_id = aws_organizations_organizational_unit.staging.id
 
   lifecycle {
@@ -72,7 +72,7 @@ resource "aws_organizations_account" "staging_shared" {
 # Create Accounts for Prod Environment (within AWS free tier limits)
 resource "aws_organizations_account" "prod_shared" {
   name      = "prod-shared"
-  email     = "prod-shared@yourorg.com"
+  email     = "umesh.poojariaws+viyansh@gmail.com"
   parent_id = aws_organizations_organizational_unit.prod.id
 
   lifecycle {
